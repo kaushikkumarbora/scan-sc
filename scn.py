@@ -20,10 +20,10 @@ if missing:
         [python, '-m', 'pip', 'install', *missing], stdout=subprocess.DEVNULL)
 
 
-from tqdm import tqdm
-import requests
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
+import requests
+from tqdm import tqdm
 
 
 # GLOBALS
@@ -31,6 +31,12 @@ accordian_cnt = 0
 CONST_reportFile = 'report.html'
 CONST_tableAttributes = 'class="table table-striped table-bordered table-hover"'
 CONST_targz = ".tar.gz"
+
+
+# Exceptions
+class DownloadError(Exception):
+    """Corrupted Download"""
+    pass
 
 
 def accordian_head(heading):
@@ -87,7 +93,7 @@ def add_checkbox(dataframe):
 
 def write_table(table, heading, description, remediation, os='', fig=None):
     global CONST_reportFile
-    imgIObytes = io.BytesIO()
+    imgiobytes = io.BytesIO()
     accordian_head(heading=heading)
     with open(CONST_reportFile, 'a') as report:
         if os != '':
@@ -97,12 +103,12 @@ def write_table(table, heading, description, remediation, os='', fig=None):
 
         report.write(table)
         if fig != None:
-            fig.savefig(imgIObytes, format='png')
-            imgIObytes.seek(0)
-            base64_jpgData = base64.b64encode(
-                imgIObytes.read()).decode('utf-8')
+            fig.savefig(imgiobytes, format='png')
+            imgiobytes.seek(0)
+            jpgdatabase64 = base64.b64encode(
+                imgiobytes.read()).decode('utf-8')
             report.write(
-                f'<img src="data:image/png;base64,{base64_jpgData}"/>')
+                f'<img src="data:image/png;base64,{jpgdatabase64}"/>')
 
     accordian_tail()
 
@@ -194,10 +200,10 @@ while docker_bench_done == False:
             progress_bar.close()
             if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
                 print("ERROR, something went wrong")
-                raise Exception("Corrupted Download")
+                raise DownloadError
             if response.status_code != 200:
                 print("Failed To Download Docker Bench")
-                raise Exception("Failed To Download Docker Bench")
+                raise ConnectionError
             with tarfile.open(docker_bench_pkg) as file:
                 file.extractall('./')
         except:
@@ -350,10 +356,10 @@ for image in images:
                 progress_bar.close()
                 if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
                     print("ERROR, something went wrong")
-                    raise Exception("Corrupted Download")
+                    raise DownloadError
                 if response.status_code != 200:
                     print("Failed To Download Trivy")
-                    raise Exception("Failed To Download Trivy")
+                    raise ConnectionError
                 with tarfile.open(trivy_pkg) as file:
                     file.extract('trivy', './')
             except:
